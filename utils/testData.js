@@ -1,4 +1,4 @@
 export const validUser = {
-    email: 'kishore.boyina@centific.com',
-    password: 'KISSu909@909'
+    email: 'kishore.boy@CH.com',
+    password: 'KADNFE'
 };
