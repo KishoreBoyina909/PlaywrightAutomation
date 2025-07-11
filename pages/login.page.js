@@ -5,7 +5,8 @@ import {
     signInButton,
     approveText,
     dataHubTile,
-    dataHubText
+    dataHubText,
+    appsDashboardHeader
 } from '../locators/login.locator';
 
 export class LoginPage {
@@ -37,20 +38,40 @@ export class LoginPage {
         await approveText(this.page).waitFor({ timeout: 10000 });
     }
 
+    async handleStaySignedInPrompt() {
+        const yesButton = this.page.getByRole('button', { name: 'Yes' });
+        if (await yesButton.isVisible({ timeout: 5000 })) {
+            await yesButton.click();
+        }
+    }
+
     async waitForMicrosoftRedirects() {
-        await this.page.waitForURL('https://login.microsoftonline.com/e2641ba0-d27c-4997-ac7e-ca388da2d5d4/login', { timeout: 120_000 });
-        await this.page.waitForURL('https://login.microsoftonline.com/common/SAS/ProcessAuth', { timeout: 120_000 });
+        // Wait until the Microsoft login completes
+        await this.page.waitForURL(/login\.microsoftonline\.com/, { timeout: 120_000 });
+
+        // ✅ Wait for the actual landing page after successful login
+        await this.page.waitForURL(/.*centific\.com\/apps\/apps\/myapps/, { timeout: 120_000 });
+    }
+
+
+    async waitForAuthenticationComplete() {
+        // Wait for "Authentication in process" to disappear
+        await this.page.getByText('Authentication in process, Please wait ...').waitFor({ state: 'hidden', timeout: 30000 });
     }
 
     async clickDataHubApp() {
+        await this.page.waitForSelector('[data-testid="appdashboard-data-hub"]', { timeout: 30000 });
         await dataHubTile(this.page).click();
     }
 
-    async verifyDataHubVisible() {
-        await dataHubText(this.page).waitFor({ timeout: 10000 });
+    async waitForDataHubVisible() {
+        await dataHubText(this.page).waitFor({ state: 'visible', timeout: 15000 });
     }
 
-    // 💡 HIGH-LEVEL composed method
+    async getAppsDashboardHeader() {
+        return appsDashboardHeader(this.page);
+    }
+
     async loginToAIDF(email, password) {
         await this.gotoLoginPage();
         await this.fillEmail(email);
@@ -58,8 +79,8 @@ export class LoginPage {
         await this.fillPassword(password);
         await this.clickSignIn();
         await this.waitForApproveText();
+        await this.handleStaySignedInPrompt();
         await this.waitForMicrosoftRedirects();
-        await this.clickDataHubApp();
-        await this.verifyDataHubVisible();
+        await this.waitForAuthenticationComplete();
     }
 }
